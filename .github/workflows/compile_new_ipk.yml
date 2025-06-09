@@ -4,7 +4,7 @@ name: Compile The New Version OpenClash
 on: 
   push:
     branches:
-      - dev
+      - master
     paths:
       - 'luci-app-openclash/Makefile'
   workflow_dispatch:
@@ -48,9 +48,7 @@ jobs:
             ![Total_Download](https://img.shields.io/github/downloads/rizkikotet-dev/luci-theme-rtawrt/v${{ steps.version.outputs.version }}/total?style=for-the-badge&labelColor=blue)
 
 
-            Kami dengan bangga mempersembahkan **v${{ steps.version.outputs.version }}** dari **${{ env.PACKAGE_NAME }}**! Rilis ini membawa berbagai peningkatan, perbaikan bug, dan fitur baru yang akan membuat pengalaman Anda lebih baik. Terima kasih atas dukungan dan masukan Anda!
-
-            ---   
+            Kami dengan bangga mempersembahkan **v${{ steps.version.outputs.version }}** dari **${{ env.PACKAGE_NAME }}**! Rilis ini membawa berbagai peningkatan, perbaikan bug, dan fitur baru yang akan membuat pengalaman Anda lebih baik. Terima kasih atas 
    
 
   Compile:
@@ -126,28 +124,9 @@ jobs:
           make defconfig
           make package/luci-app-openclash/compile V=99
 
-      - name: Switch OpenClash Repository to Package
-        uses: actions/checkout@v4
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
         with:
-          ref: package
-
-      - name: Commit and Push New Version
-        run: |
-          rm -rf ./${{ github.ref_name }}/luci-app-openclash*
-          echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
-          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
-          cd ..
-          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
-          cp "./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
-          sed -i -E "s/OpenClash\/tree\/v(.*)/OpenClash\/tree\/v${{ needs.Get-Version.outputs.version }}/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/OpenClash\/releases\/tag\/v(.*)/OpenClash\/releases\/tag\/v${{ needs.Get-Version.outputs.version }}/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/source code-v(.*)-green/source code-v${{ needs.Get-Version.outputs.version }}-green/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/New Release-v(.*)-orange/New Release-v${{ needs.Get-Version.outputs.version }}-orange/g" ./OpenClash/${{ github.ref_name }}/README.md
-          cd \OpenClash
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .
-          git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
-          git push
-
-      
+          tag_name: "v${{ needs.get-version.outputs.version }}"
+          files: |
+            ${{ github.workspace }}/release-artifacts/*
