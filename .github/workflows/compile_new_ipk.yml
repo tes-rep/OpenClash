@@ -45,7 +45,7 @@ jobs:
           files: ./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk
           generate_release_notes: true
           draft: false
-          name: "v${{ steps.version.outputs.version }} Release"
+          prerelease: true
           body: |
             ## 🚀 **Release v${{ steps.version.outputs.version }}** 🚀
             ![Total_Download](https://img.shields.io/github/downloads/rizkikotet-dev/luci-theme-rtawrt/v${{ steps.version.outputs.version }}/total?style=for-the-badge&labelColor=blue)
