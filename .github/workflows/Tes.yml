@@ -1,0 +1,56 @@
+
+name: Compile 
+
+on: 
+  push:
+    branches:
+      - dev
+    paths:
+      - 'luci-app-openclash/Makefile'
+  workflow_dispatch:
+
+jobs:
+  Get-Version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      current_version: ${{ steps.current_version.outputs.version }}
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: New Version
+        id: version
+        run: |
+          echo "version=$(grep 'PKG_VERSION:=' ./luci-app-openclash/Makefile |awk -F '=' '{print $2}')" >> $GITHUB_OUTPUT
+          echo "New Version: $(grep 'PKG_VERSION:=' ./luci-app-openclash/Makefile |awk -F '=' '{print $2}')"
+
+      - name: Clone Repository
+        uses: actions/checkout@v4
+        with:
+          ref: package
+
+      - name: Current Version
+        id: current_version
+        run: |
+          echo "version=$(sed -n 1p ./${{ github.ref_name }}/version |awk -F 'v' '{print $2}')" >> $GITHUB_OUTPUT
+          echo "Current Version: $(sed -n 1p ./${{ github.ref_name }}/version |awk -F 'v' '{print $2}')"
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          prerelease: true
+          body: |
+            ## 🚀 **Release v${{ steps.version.outputs.version }}** 🚀
+            ![Total_Download](https://img.shields.io/github/downloads/rizkikotet-dev/luci-theme-rtawrt/v${{ steps.version.outputs.version }}/total?style=for-the-badge&labelColor=blue)
+
+
+            Kami dengan bangga mempersembahkan **v${{ steps.version.outputs.version }}** dari **${{ env.PACKAGE_NAME }}**! Rilis ini membawa berbagai peningkatan, perbaikan bug, dan fitur baru yang akan membuat pengalaman Anda lebih baik. Terima kasih atas dukungan dan masukan Anda!
+
+            ---   
+   
+
+  
