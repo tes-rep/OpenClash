@@ -129,4 +129,4 @@ jobs:
         with:
           tag_name: "v${{ needs.get-version.outputs.version }}"
           files: |
-            ${{ github.workspace }}/release-artifacts/*
+            bin/ar71xx/packages/base/*.ipk
