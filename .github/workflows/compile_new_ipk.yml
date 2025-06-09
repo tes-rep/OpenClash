@@ -134,3 +134,20 @@ jobs:
           git add .
           git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
           git push
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          files: ./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk
+          generate_release_notes: true
+          draft: false
+          name: "v${{ steps.version.outputs.version }} Release"
+          body: |
+            ## 🚀 **Release v${{ steps.version.outputs.version }}** 🚀
+            ![Total_Download](https://img.shields.io/github/downloads/rizkikotet-dev/luci-theme-rtawrt/v${{ steps.version.outputs.version }}/total?style=for-the-badge&labelColor=blue)
+
+
+            Kami dengan bangga mempersembahkan **v${{ steps.version.outputs.version }}** dari **${{ env.PACKAGE_NAME }}**! Rilis ini membawa berbagai peningkatan, perbaikan bug, dan fitur baru yang akan membuat pengalaman Anda lebih baik. Terima kasih atas dukungan dan masukan Anda!
+
+            ---   
