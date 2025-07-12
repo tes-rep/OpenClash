@@ -7,8 +7,8 @@ local UTIL = require "luci.util"
 local fs = require "luci.openclash"
 local uci = require("luci.model.uci").cursor()
 
-m = SimpleForm("openclash",translate("OpenClash"))
-m.description = translate("A Clash Client For OpenWrt")
+m = SimpleForm("openclash",translate(""))
+m.description = translate("")
 m.reset = false
 m.submit = false
 
@@ -18,7 +18,6 @@ if uci:get("openclash", "config", "dler_token") then
 end
 
 m:append(Template("openclash/myip"))
-m:append(Template("openclash/developer"))
 m:append(Template("openclash/select_git_cdn"))
 m:append(Template("openclash/config_edit"))
 m:append(Template("openclash/config_upload"))
