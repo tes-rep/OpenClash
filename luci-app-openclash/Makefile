@@ -104,6 +104,7 @@ endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
+ln -sf /etc/openclash /www/tinyfm/openclash 2>&1
 	exit 0
 endef
 
