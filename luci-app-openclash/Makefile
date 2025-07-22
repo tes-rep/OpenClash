@@ -104,21 +104,6 @@ endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
-TARGET="/www/tinyfm/openclash"
-SOURCE="/etc/openclash"
-
-# Buat folder tujuan jika belum ada
-mkdir -p /www/tinyfm
-
-# Hapus symlink yang salah (jika ada)
-[ -L "/etc/openclash/openclash" ] && rm -f "/etc/openclash/openclash"
-
-# Buat symlink ke web jika belum ada atau salah arah
-if [ "$(readlink -f "$TARGET")" != "$SOURCE" ]; then
-	rm -rf "$TARGET"
-	ln -s "$SOURCE" "$TARGET"
-fi
-
 exit 0
 endef
 
