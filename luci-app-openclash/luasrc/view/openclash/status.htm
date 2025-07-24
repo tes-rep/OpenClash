@@ -1,10 +1,10 @@
 <html>
 <head>
 <style>
-	body {
+
+body {
     background-color: #1f2937 !important;
     color: #e5e7eb !important;
-	}
 .oc {
     --bg-white: #ffffff;
     --bg-light: #f8fafc;
@@ -31,7 +31,7 @@
     --transition-normal: 0.3s ease;
     
     --control-height: 32px;
-    --card-padding: 8px 5px;
+    --card-padding: 6px 8px;
     --gap-size: 10px;
     
     --row-1-height: 160px;
@@ -284,7 +284,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     padding: 10px 6px;
     min-height: 0;
 }
@@ -613,7 +613,7 @@
 
 .oc .cbi-button-option {
     flex: 1 1 0;
-    padding: 5px 5px;
+    padding: 5px 10px;
     font-size: 12px;
     font-weight: 500;
     color: var(--text-secondary);
@@ -643,7 +643,7 @@
 
 .oc .value-indicator {
     font-weight: 500;
-    padding: 10px 12px;
+    padding: 6px 6px;
     border-radius: var(--radius-sm);
     display: inline-flex;
     align-items: center;
@@ -722,6 +722,8 @@
     padding: 2px 1px !important;
     min-width: 45px;
     margin: 0 !important;
+    word-break: normal;
+    overflow-wrap: break-word;
 }
 
 .oc .dashboard-btn:hover {
@@ -734,6 +736,8 @@
     color: var(--text-secondary);
     text-align: center;
     position: relative;
+    white-space: nowrap;
+    margin-top: 15px;
 }
 
 .oc .stat-label::after {
@@ -749,14 +753,15 @@
 
 .oc .stat-value {
     font-family: var(--font-family-mono);
-    font-size: clamp(8px, 2.2vw, 13px);
+    font-size: clamp(9px, 2.2vw, 12px);
     font-weight: 600;
     color: var(--success-color);
     text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
     margin-top: 5px;
+    min-height: 38px;
 }
 
 .oc .plugin-toggle-container {
@@ -1281,7 +1286,7 @@
 
     .oc .value-indicator {
         font-size: 11px;
-        padding: 8px 10px;
+        padding: 5px 5px;
     }
 
     .oc .cbi-button-option {
@@ -1500,7 +1505,7 @@
     }
 
     .oc .value-indicator {
-        padding: 5px 5px;
+        padding: 4px 4px;
         min-width: 50px;
         height: 28px;
     }
@@ -1514,7 +1519,7 @@
     }
 
     .oc .stat-value {
-        font-size: 8px;
+        min-height: 30px;
     }
 
     .oc .subscription-info-text {
@@ -1532,7 +1537,6 @@
 
     .oc .sub-card.stat-item {
         padding: 8px 4px;
-        gap: 6px;
     }
 
     .oc .card-content {
@@ -1862,7 +1866,7 @@
                             <div class="sub-card stat-item"><span class="stat-label"><%:Down%></span><span id="download_" class="stat-value">0 KB/S</span></div>
                             <div class="sub-card stat-item"><span class="stat-label"><%:Up Total%></span><span id="uploadtotal_" class="stat-value">0 KB</span></div>
                             <div class="sub-card stat-item"><span class="stat-label"><%:Down Total%></span><span id="downloadtotal_" class="stat-value">0 KB</span></div>
-                            <div class="sub-card stat-item"><span class="stat-label"><%:Connections%></span><span id="connect_t" class="stat-value">0</span></div>
+                            <div class="sub-card stat-item"><span class="stat-label"><%:Connect%></span><span id="connect_t" class="stat-value">0</span></div>
                             <div class="sub-card stat-item"><span class="stat-label"><%:Ram%></span><span id="mem_t" class="stat-value">0 KB</span></div>
                             <div class="sub-card stat-item"><span class="stat-label"><%:CPU%></span><span id="cpu_t" class="stat-value">0 %</span></div>
                             <div class="sub-card stat-item"><span class="stat-label"><%:Load Avg%></span><span id="load_a" class="stat-value">0</span></div>
@@ -3657,13 +3661,13 @@
             updates.push({element: DOMCache.webz, content: webzContent});
 
 
-            var closeConnContent = status.clash ? '<input type="button" class="dashboard-btn" value="<%:Close All Connections%>" onclick="return b_close_all_connection(this)"/>' : '<input type="button" class="dashboard-btn" value="<%:Close All Connections%>" onclick="event.preventDefault(); event.stopPropagation(); return false;"/>';
+            var closeConnContent = status.clash ? '<input type="button" class="dashboard-btn" value="<%:Close Connect%>" onclick="return b_close_all_connection(this)"/>' : '<input type="button" class="dashboard-btn" value="<%:Close Connect%>" onclick="event.preventDefault(); event.stopPropagation(); return false;"/>';
             updates.push({element: document.getElementById('_close_all_connection_btn'), content: closeConnContent});
 
             var reloadFwContent = status.clash ? '<input type="button" class="dashboard-btn" value="<%:Reload Firewall%>" onclick="return b_reload_firewall(this)"/>' : '<input type="button" class="dashboard-btn" value="<%:Reload Firewall%>" onclick="event.preventDefault(); event.stopPropagation(); return false;"/>';
             updates.push({element: document.getElementById('_reload_firewall_btn'), content: reloadFwContent});
 
-            var flushCacheContent = status.clash ? '<input type="button" class="dashboard-btn" value="<%:Flush Fake-IP Cache%>" onclick="return b_flush_fakeip_cache(this)"/>' : '<input type="button" class="dashboard-btn" value="<%:Flush Fake-IP Cache%>" onclick="event.preventDefault(); event.stopPropagation(); return false;"/>';
+            var flushCacheContent = status.clash ? '<input type="button" class="dashboard-btn" value="<%:Flush Fake Cache%>" onclick="return b_flush_fakeip_cache(this)"/>' : '<input type="button" class="dashboard-btn" value="<%:Flush Fake Cache%>" onclick="event.preventDefault(); event.stopPropagation(); return false;"/>';
             updates.push({element: document.getElementById('_flush_fakeip_cache_btn'), content: flushCacheContent});
 
             var oneKeyUpdateContent = '<input type="button" class="dashboard-btn" value="<%:Check Update%>" onclick="return all_one_key_update(this)"/>';
@@ -4234,7 +4238,7 @@
         btn.value = '<%:Reloading...%>';
         XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "close_all_connection")%>', null, function(x, status) {
             btn.disabled = false;
-            btn.value = (x && x.status == 200) ? '<%:Close All Connections%>' : '<%:Close All Connections Failed%>';
+            btn.value = (x && x.status == 200) ? '<%:Close Connect%>' : '<%:Close Connect Failed%>';
         });
         return false;
     });

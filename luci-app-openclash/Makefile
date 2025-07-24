@@ -1,7 +1,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-openclash
-PKG_VERSION:=0.46.137a
+
+PKG_VERSION:=0.46.139
+
 PKG_MAINTAINER:=vernesong <https://github.com/vernesong/OpenClash>
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
@@ -104,9 +106,10 @@ endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
-ln -sf /etc/openclash /www/tinyfm/openclash 2>&1
-	exit 0
+
+exit 0
 endef
+
 
 define Package/$(PKG_NAME)/prerm
 #!/bin/sh
