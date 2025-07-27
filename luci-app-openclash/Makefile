@@ -1,7 +1,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-openclash
+
 PKG_VERSION:=0.46.139
+
 PKG_MAINTAINER:=vernesong <https://github.com/vernesong/OpenClash>
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
@@ -16,7 +18,7 @@ define Package/$(PKG_NAME)/config
 	default y if PACKAGE_$(PKG_NAME)
 
 	config PACKAGE_kmod-nft-tproxy
-	default y if PACKAGE_firewall4
+	default y if PACKAGE_firewall
 
 	config PACKAGE_kmod-ipt-nat
 	default y if ! PACKAGE_firewall4
@@ -104,8 +106,10 @@ endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
-	exit 0
+
+exit 0
 endef
+
 
 define Package/$(PKG_NAME)/prerm
 #!/bin/sh
