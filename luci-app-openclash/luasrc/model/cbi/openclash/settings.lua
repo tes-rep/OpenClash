@@ -20,16 +20,7 @@ if not op_mode then op_mode = "redir-host" end
 local lan_ip = fs.lanip()
 m = Map("openclash", translate("Plugin Settings"))
 m.pageaction = false
-m.description = translate("Note: To restore the default configuration, try accessing:").." <a href='javascript:void(0)' onclick='javascript:restore_config(this)'>http://"..lan_ip.."/cgi-bin/luci/admin/services/openclash/restore</a>"..
-"<br/>"..translate("Note: It is not recommended to enable IPv6 and related services for routing. Most of the network connection problems reported so far are related to it")..
-"<br/>"..font_green..translate("Note: Turning on secure DNS in the browser will cause abnormal shunting, please be careful to turn it off")..font_off..
-"<br/>"..font_green..translate("Note: Some software will modify the device HOSTS, which will cause abnormal shunt, please pay attention to check")..font_off..
-"<br/>"..font_green..translate("Note: Game proxy please use nodes except VMess")..font_off..
-"<br/>"..font_green..translate("Note: If you need to perform client access control in Fake-IP mode, please change the DNS hijacking mode to firewall forwarding")..font_off..
-"<br/>"..translate("Note: The default proxy routes local traffic, BT, PT download, etc., please use Redir-Host mode as much as possible and pay attention to traffic avoidance")..
-"<br/>"..translate("Note: If the connection is abnormal, please follow the steps on this page to check first")..": ".."<a href='javascript:void(0)' onclick='javascript:return winOpen(\"https://github.com/vernesong/OpenClash/wiki/%E7%BD%91%E7%BB%9C%E8%BF%9E%E6%8E%A5%E5%BC%82%E5%B8%B8%E6%97%B6%E6%8E%92%E6%9F%A5%E5%8E%9F%E5%9B%A0\")'>"..translate("Click to the page").."</a>"..
-"<br/>"..font_green..translate("For More Useful Meta Core Functions Go Wiki")..": "..font_off.."<a href='javascript:void(0)' onclick='javascript:return winOpen(\"https://wiki.metacubex.one/\")'>"..translate("https://wiki.metacubex.one/").."</a>"
-
+m.description = translate("")
 s = m:section(TypedSection, "openclash")
 s.anonymous = true
 
@@ -120,10 +111,8 @@ o:value("0", translate("Disable"))
 o:value("1", translate("Dnsmasq Redirect"))
 o:value("2", translate("Firewall Redirect"))
 
-if op_mode == "fake-ip" then
-o = s:taboption("dns", DummyValue, "flush_fakeip_cache", translate("Flush Fake-IP Cache"))
-o.template = "openclash/flush_fakeip_cache"
-end
+o = s:taboption("dns", DummyValue, "flush_dns_cache", translate("Flush DNS Cache"))
+o.template = "openclash/flush_dns_cache"
 
 o = s:taboption("dns", Flag, "enable_custom_domain_dns_server", translate("Enable Specify DNS Server"))
 o.default = 0

@@ -256,4 +256,29 @@ sed -i '/.*kB maximum content size*/c\export let HTTP_MAX_CONTENT = 1024*10240;	
 /etc/init.d/uhttpd restart >/dev/null 2>&1
 
 rm -f /tmp/luci-indexcache* >/dev/null 2>&1
+create_safe_openclash_symlink() {
+	local target="/etc/openclash"
+	local link="/www/tinyfm/openclash"
+
+	mkdir -p /www/tinyfm
+
+	# Jika sudah ada symlink yang tepat, lewati
+	if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$target" ]; then
+		echo "[✓] Symlink sudah benar: $link -> $target"
+		return 0
+	fi
+
+	# Jika ada file/folder yang salah, hapus dulu
+	if [ -e "$link" ]; then
+		echo "[!] Menghapus $link karena bukan symlink yang benar"
+		rm -rf "$link"
+	fi
+
+	# Buat symlink baru
+	ln -sf "$target" "$link" && echo "[+] Symlink dibuat: $link -> $target"
+}
+
+# Panggil fungsi
+create_safe_openclash_symlink
+
 exit 0

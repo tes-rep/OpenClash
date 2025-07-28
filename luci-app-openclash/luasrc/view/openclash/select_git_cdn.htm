@@ -23,7 +23,7 @@
     --transition-normal: 0.3s ease;
     
     --control-height: 36px;
-    --card-padding: 6px 10px;
+    --card-padding: 6px 8px;
     --gap-size: 16px;
 }
 
@@ -51,6 +51,7 @@
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-light);
+    border-radius: var(--radius-lg);
 }
 
 .select-popup {
@@ -121,6 +122,9 @@
     background: var(--bg-gray);
     flex-shrink: 0;
     margin-bottom: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .select-config-section {
@@ -269,6 +273,11 @@
     flex-direction: row;
 }
 
+.select-option span {
+    white-space: normal;
+    word-break: break-all;
+}
+
 .select-option:last-child {
     border-bottom: none;
 }
@@ -289,9 +298,9 @@
 }
 
 .custom-option-input {
-    margin: 12px;
+    margin: 12px auto;
     padding: 12px;
-    width: calc(100% - 24px);
+    width: calc(100% - 24px) !important;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-sm);
     background: var(--bg-white);
@@ -318,6 +327,7 @@
     border-bottom: none !important;
     margin: 0 12px 12px 12px;
     border-radius: var(--radius-sm);
+    text-align: center;
 }
 
 #addCustomOption:hover {
@@ -331,6 +341,7 @@
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     margin-left: 8px;
+    white-space: nowrap !important;
 }
 
 .cdn-status.fast {
@@ -372,9 +383,9 @@
 
 @media screen and (max-width: 768px) {
     .select-popup {
-        min-width: 95%;
-        width: 95%;
-        padding: 20px;
+        min-width: 80%;
+        width: 80%;
+        padding: 15px;
         max-height: 90vh;
         overflow-y: auto;
     }
@@ -418,9 +429,9 @@
 
 @media screen and (max-width: 575px) {
     .select-popup {
-        min-width: 98%;
-        width: 98%;
-        padding: 16px;
+        min-width: 80%;
+        width: 80%;
+        padding: 12px;
     }
     
     .select-popup-header {
@@ -595,8 +606,8 @@
         </div>
         
         <div class="select-popup-body">
-            <div class="select-option" data-value="">
-                <span><%:Use RAW address download%></span>
+            <div class="select-option" data-value="https://raw.githubusercontent.com/">
+                <span>https://raw.githubusercontent.com/ (<%:RAW address%>)</span>
             </div>
             <div class="select-option" data-value="https://fastly.jsdelivr.net/">
                 <span>https://fastly.jsdelivr.net/</span>
@@ -611,7 +622,7 @@
                 <span><%:Custom Your CDN URL%></span>
                 <span style="font-size: 12px; opacity: 0.7;">→</span>
             </div>
-            <input type="text" id="customOptionInput" class="custom-option-input" value="https://ghp.ci/" placeholder="<%:Type CDN URL, Format Like%> https://ghp.ci/" style="display: none;">
+            <input type="text" id="customOptionInput" class="custom-option-input" value="https://ghfast.top/" placeholder="<%:Type CDN URL, Format Like%> https://ghfast.top/" style="display: none;">
             <div class="select-option" id="addCustomOption" style="display: none;"><%:Add%></div>
         </div>
     </div>
@@ -761,7 +772,11 @@
             updateCDNStatus(ID, status, text);
         };
 
-        img.src = `${domain}favicon.ico?${+(new Date)}`;
+        if (domain === 'https://raw.githubusercontent.com/') {
+            img.src = `https://raw.githubusercontent.com/vernesong/OpenClash/dev/img/logo.png?${+(new Date)}`;
+        } else {
+            img.src = `${domain}favicon.ico?${+(new Date)}`;
+        }
     }
     
     function updateCDNStatus(element, status, text) {
@@ -846,6 +861,9 @@
             addCustomOption.style.display = 'none';
             if (typeof LogManager !== 'undefined' && LogManager) {
                 LogManager.startLogDisplay('<%:Checking...%>');
+            }
+            if (target.dataset.value === 'https://raw.githubusercontent.com/') {
+                target.dataset.value = '';
             }
             if (type === 'core_download') {
                 XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "save_corever_branch")%>', {core_ver: v, release_branch: r, smart_enable: s}, function(x, status) {
