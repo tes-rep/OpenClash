@@ -350,6 +350,9 @@ msgstr "更新时间(每天)"
 msgid "Update Interval(min)"
 msgstr "更新间隔(分钟)"
 
+msgid "Update Interval(hour)"
+msgstr "更新间隔(小时)"
+
 msgid "Update Mode"
 msgstr "更新模式"
 
@@ -906,13 +909,13 @@ msgstr "指定策略组"
 msgid "No Need Set when Config Create, The added Proxy Groups Must Exist"
 msgstr "注意：使用一键生成配置文件功能时无需设置此项，修改配置文件前添加的策略组必须已创建"
 
-msgid "Clean Log"
+msgid "Clean"
 msgstr "清理日志"
 
-msgid "Stop Refresh Log"
+msgid "Stop Refresh"
 msgstr "停止刷新"
 
-msgid "Start Refresh Log"
+msgid "Start Refresh"
 msgstr "开始刷新"
 
 msgid "Config File"
@@ -1323,9 +1326,6 @@ msgstr "Tip: OpenClash 成功启动后请耐心等待下方网站访问检查连
 msgid "Tip: You can modify the profile on the profile page (for content that is not taken over)"
 msgstr "Tip: 您可以在配置文件页面直接修改配置文件（适用于没被接管的内容）"
 
-msgid "Tip: click the version icon above to jump to the client publishing page"
-msgstr "Tip: 点击上方版本图标可跳转到客户端发布页面"
-
 msgid "Tip: do not write configuration files? Try to create one click on the server page"
 msgstr "Tip: 不会编写配置文件？试试在【服务器与策略组管理】页面一键创建"
 
@@ -1338,20 +1338,14 @@ msgstr "Tip: 使用 Fake-IP 模式可以获得更加快速的访问体验"
 msgid "Tip: query DNS by TLS & TCP & HTTPS can get better anti pollution effect"
 msgstr "Tip: 使用 TLS & TCP & HTTPS 方式查询DNS可以获得更好的抗污染效果"
 
-msgid "Tip: openlash will check the configuration file parameters to ensure that it works properly"
-msgstr "Tip: OpenClash 启动时会检查配置文件参数【服务器（策略）组、规则、DNS设置】以确保能够正常工作"
-
 msgid "Tip: the nameserver group must have at least one server set when using custom DNS"
 msgstr "Tip: 使用自定义DNS上游服务器时NameServer组必须设置至少一个服务器"
-
-msgid "Tip: the website access check shows the connection of the device currently logged in to the Luci page"
-msgstr "Tip: 网站访问检查展示的是当前登录LUCI页面设备的连接情况"
 
 msgid "Tip: if you don not use IPv6, please turn off the DHCP service of IPv6, otherwise the connection will be abnormal"
 msgstr "Tip: 如果不使用IPv6，请关闭IPv6的DHCP服务，否则会造成连接异常"
 
-msgid "Tip: you can update the version in the global settings page"
-msgstr "Tip: 您可以在全局设置页面进行版本更新操作"
+msgid "Tip: you can update the version in the settings page"
+msgstr "Tip: 您可以在插件设置页面进行版本更新操作"
 
 msgid "Note: if the update fails, you can manually download and upload"
 msgstr "注意：如更新失败可手动下载并上传"
@@ -2142,14 +2136,14 @@ msgstr "3、在此页面设置您已下载的规则的对应配置文件、策�
 msgid "When setting this page, if the groups is empty, please go to the <Onekey Create> page to add"
 msgstr "本页设置时如策略组为空，请先到《一键生成》页面进行添加"
 
-msgid "Introduction to rule set usage: https://wiki.metacubex.one/config/rule-providers/content/"
-msgstr "规则集使用介绍：https://wiki.metacubex.one/config/rule-providers/content/"
+msgid "Introduction to rule set usage:"
+msgstr "规则集使用介绍："
 
-msgid "Introduction to proxy usage: https://wiki.metacubex.one/config/proxies/"
-msgstr "代理使用介绍：https://wiki.metacubex.one/config/proxies/"
+msgid "Introduction to proxy usage:"
+msgstr "代理使用介绍："
 
-msgid "Introduction to proxy-provider usage: https://wiki.metacubex.one/config/proxy-providers/"
-msgstr "代理集使用介绍：https://wiki.metacubex.one/config/proxy-providers/"
+msgid "Introduction to proxy-provider usage:"
+msgstr "代理集使用介绍："
 
 msgid "Subconverter external configuration (subscription conversion template) Description: https://github.com/tindy2013/subconverter#external-configuration-file"
 msgstr "subconverter 外部配置(订阅转换模板)说明：https://github.com/tindy2013/subconverter#external-configuration-file"
@@ -2238,8 +2232,8 @@ msgstr "签到间隔（小时）"
 msgid "Checkin Multiple"
 msgstr "签到倍数"
 
-msgid "Multiple Must Be a Positive Integer and No More Than 50"
-msgstr "倍数必须是正整数且不大于50"
+msgid "Multiple Must Be a Positive Integer and No More Than 100"
+msgstr "倍数必须是正整数且不大于 100"
 
 msgid "Dler Cloud Checkin Successful, Result:"
 msgstr "Dler Cloud 签到成功，结果："
@@ -2764,7 +2758,7 @@ msgid "Flush"
 msgstr "清理"
 
 msgid "Flush DNS Cache"
-msgstr "清理 DNS 缓存"
+msgstr "清理DNS缓存"
 
 msgid "No Specify Upload File"
 msgstr "未选择上传文件"
@@ -2846,6 +2840,9 @@ msgstr "启用后将尽可能的覆盖DNS查询到的域名"
 
 msgid "Meta Settings"
 msgstr "Meta 设置"
+
+msgid "Smart Settings"
+msgstr "Smart 设置"
 
 msgid "Geodata Loader Mode"
 msgstr "Geodata 数据加载方式"
@@ -4001,3 +3998,78 @@ msgstr "运行配置"
 
 msgid "Runtime config (read only)"
 msgstr "运行配置（只读）"
+
+msgid "Start Downloading LightGBM Model..."
+msgstr "开始下载 LightGBM 模型..."
+
+msgid "LightGBM Model Download Success, Check Updated..."
+msgstr "LightGBM 模型下载成功，检查是否有更新..."
+
+msgid "LightGBM Model Has Been Updated, Starting To Replace The Old Version..."
+msgstr "LightGBM 模型有更新，正在替换旧版本..."
+
+msgid "LightGBM Model Update Successful!"
+msgstr "LightGBM 模型更新成功！"
+
+msgid "Updated LightGBM Model No Change, Do Nothing..."
+msgstr "LightGBM 模型没有更新，停止继续操作..."
+
+msgid "LightGBM Model Update Error, Please Try Again Later..."
+msgstr "LightGBM 模型更新失败，请检查网络或稍后再试..."
+
+msgid "Smart Auto Switch"
+msgstr "Smart 策略自动切换"
+
+msgid "Auto Switch Url-test and Load-balance Group to Smart Group"
+msgstr "自动切换 Url-test、Load-balance 策略组到 Smart 策略组"
+
+msgid "Auto Update LightGBM Model"
+msgstr "自动更新模型"
+
+msgid "Custom Model URL"
+msgstr "自定义模型更新 URL"
+
+msgid "Update Model"
+msgstr "更新模型"
+
+msgid "Custom LightGBM Model URL, Click Button Below To Refresh After Edit"
+msgstr "自定义模型的更新来源，编辑后点击下方按钮生效"
+
+msgid "Colletct Training Data"
+msgstr "收集训练数据"
+
+msgid "Data Colletct File Size (MB)"
+msgstr "数据收集文件大小（MB）"
+
+msgid "Limit The File Size of Collected Data, The Default is 100MB"
+msgstr "限制数据收集文件大小，默认为 100MB"
+
+msgid "Data Colletct Rate"
+msgstr "数据收集采样率"
+
+msgid "Data Acquisition Rate, Desirable Values are 0-1, The Default is 1"
+msgstr "指定数据收集时的采样率，值为 0-1 之间的数字，默认为 1"
+
+msgid "Node Select Strategy"
+msgstr "节点选择策略"
+
+msgid "Before Node Data Collect Completely, The Default is Sticky-sessions"
+msgstr "在收集到足够数据并优选前，使用指定策略选择节点，默认为粘性会话（sticky-sessions）"
+
+msgid "Error: Setting Smart Auto Switch Failed,"
+msgstr "错误：Smart 策略组自动切换失败，"
+
+msgid "Flush Smart Cache"
+msgstr "清理 Smart 缓存"
+
+msgid "Current Version:"
+msgstr "当前版本:"
+
+msgid "Light Version"
+msgstr "轻量版"
+
+msgid "Middle Version"
+msgstr "中等版"
+
+msgid "Large Version"
+msgstr "完整版"

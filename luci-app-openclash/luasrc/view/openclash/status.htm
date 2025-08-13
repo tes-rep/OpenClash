@@ -499,7 +499,7 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
-    max-width: 155px;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -736,7 +736,7 @@ body {
     flex: 1 !important;
     height: 42px !important;
     outline: none !important;
-    padding: 2px 1px !important;
+    padding: 2px 2px !important;
     min-width: 45px;
     margin: 0 !important;
     word-break: normal;
@@ -1444,7 +1444,7 @@ body {
     }
 
     .oc .version-display {
-        max-width: 80px;
+        max-width: 100px;
         font-size: 9px;
         padding: 1px 4px;
     }
@@ -2478,6 +2478,11 @@ body {
                 }
                 
                 this.updateNavigationArrows();
+
+                if (this._retryGetConfigList) {
+                    clearInterval(this._retryGetConfigList);
+                    this._retryGetConfigList = null;
+                }
                 
             } catch (e) {
                 this.handleConfigListError();
@@ -2491,6 +2496,13 @@ body {
             
             this.toggleEmptyState(true);
             this.hideSubscriptionDisplay();
+
+            if (!this._retryGetConfigList) {
+                var self = this;
+                this._retryGetConfigList = setInterval(function() {
+                    self.loadConfigFileList();
+                }, 5000);
+            }
         },
 
         toggleEmptyState: function(isEmpty) {
@@ -3647,18 +3659,15 @@ body {
 
     document.addEventListener('DOMContentLoaded', function() {
         DarkModeDetector.init();
-        
-        setTimeout(function() {
-            ConfigFileManager.init();
-        }, 200);
-        
+        ConfigFileManager.init();
+
         setTimeout(function() {
             SubscriptionManager.init();
-        }, 200);
+        }, 300);
 
         setTimeout(function() {
             check_core();
-        }, 800);
+        }, 1000);
 
         setTimeout(function() {
             loadAnnouncement();
@@ -3852,12 +3861,10 @@ body {
             '<%:Tip: some website are abnormal? Try switching modes or using third-party rules%>',
             '<%:Tip: using the fake IP mode can get a faster access experience%>',
             '<%:Tip: query DNS by TLS & TCP & HTTPS can get better anti pollution effect%>',
-            '<%:Tip: openlash will check the configuration file parameters to ensure that it works properly%>',
             '<%:Tip: the nameserver group must have at least one server set when using custom DNS%>',
-            '<%:Tip: the website access check shows the connection of the device currently logged in to the Luci page%>',
             '<%:Tip: after started, please wait patiently until the connection is normal%>',
             '<%:Tip: if you don not use IPv6, please turn off the DHCP service of IPv6, otherwise the connection will be abnormal%>',
-            '<%:Tip: you can update the version in the global settings page%>',
+            '<%:Tip: you can update the version in the settings page%>',
             '<%:Note: It is not recommended to enable IPv6 and related services for routing. Most of the network connection problems reported so far are related to it%>',
             '<%:Note: Turning on secure DNS in the browser will cause abnormal shunting, please be careful to turn it off%>',
             '<%:Note: Some software will modify the device HOSTS, which will cause abnormal shunt, please pay attention to check%>',
@@ -4058,24 +4065,6 @@ body {
         
         StateManager.cachedXHRGet('<%=luci.dispatcher.build_url("admin", "services", "openclash", "rule_mode")%>', function(x, status) {
             if (x && x.status == 200 && status.mode != "") {
-                if (status.core_type == "TUN" && DOMCache.radio.length != 4) {
-                    script_radio = document.createElement("input");
-                    script_radio.setAttribute("type", "radio");
-                    script_radio.setAttribute("id", "script");
-                    script_radio.setAttribute("name", "radios");
-                    script_radio.setAttribute("value", "script");
-                    script_radio.setAttribute("onclick", "javascript:return switch_rule_mode(this.value);");
-                    script_radio_label = document.createElement("label");
-                    script_radio_label.setAttribute("for", "script");
-                    script_radio_label.setAttribute("class", "cbi-button-option");
-                    script_radio_label.innerHTML = "Script";
-                    DOMCache.radio_mode.appendChild(script_radio);
-                    DOMCache.radio_mode.appendChild(script_radio_label);
-                } else if (status.core_type != "TUN" && DOMCache.radio.length == 4) {
-                    DOMCache.radio_mode.removeChild(script_radio);
-                    DOMCache.radio_mode.removeChild(script_radio_label);
-                }
-                
                 if (!SettingsManager.pendingOperations.has('rule_mode_' + status.mode)) {
                     for (var i = 0; i < DOMCache.radio.length; i++) {
                         if (DOMCache.radio[i].value == status.mode && !DOMCache.radio[i].checked) {
@@ -4278,74 +4267,102 @@ body {
     });
         
     function net_zashboard(btn) {
-        XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "status")%>', null, function(x, status) {
-            btn.disabled = true;
-            btn.value = '<%:Zashboard%>';
-            var url9;
-            if (status.daip && window.location.hostname == status.daip) {
-                url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/zashboard/#/setup?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
-            } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
-                var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
-                url9 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/zashboard/#/setup?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
-            } else {
-                url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/zashboard/#/';
-            }
-            winOpen(url9);
-        });
+        if (StateManager.current_status) {
+            var status = StateManager.current_status;
+        } else {
+            setTimeout(function() {
+                net_zashboard(btn)
+            }, 1000);
+            return false;
+        }
+
+        btn.disabled = true;
+        btn.value = '<%:Zashboard%>';
+        var url9;
+        if (status.daip && window.location.hostname == status.daip) {
+            url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/zashboard/#/setup?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
+        } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
+            var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
+            url9 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/zashboard/#/setup?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
+        } else {
+            url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/zashboard/#/';
+        }
+        winOpen(url9);
         return false;
     }
 
     function meta_dashboard(btn) {
-        XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "status")%>', null, function(x, status) {
-            btn.disabled = true;
-            btn.value = '<%:Metacubexd%>';
-            var url9;
-            if (status.daip && window.location.hostname == status.daip) {
-                url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/metacubexd/#/setup?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
-            } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
-                var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
-                url9 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/metacubexd/#/setup?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
-            } else {
-                url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/metacubexd/#/';
-            }
-            winOpen(url9);
-        });
+        if (StateManager.current_status) {
+            var status = StateManager.current_status;
+        } else {
+            setTimeout(function() {
+                meta_dashboard(btn)
+            }, 1000);
+            return false;
+        }
+
+        btn.disabled = true;
+        btn.value = '<%:Metacubexd%>';
+        var url9;
+        if (status.daip && window.location.hostname == status.daip) {
+            url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/metacubexd/#/setup?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
+        } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
+            var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
+            url9 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/metacubexd/#/setup?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
+        } else {
+            url9 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/metacubexd/#/';
+        }
+        winOpen(url9);
         return false;
     }
 
     function ycad_dashboard(btn) {
-        XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "status")%>', null, function(x, status) {
-            btn.disabled = true;
-            btn.value = '<%:Yacd%>';
-            var url1;
-            if (status.daip && window.location.hostname == status.daip) {
-                url1 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/yacd/?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
-            } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
-                var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
-                url1 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/yacd/?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
-            } else {
-                url1 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/yacd/';
-            }
-            winOpen(url1);
-        });
+        if (StateManager.current_status) {
+            var status = StateManager.current_status;
+        } else {
+            setTimeout(function() {
+                ycad_dashboard(btn)
+            }, 1000);
+            return false;
+        }
+
+        btn.disabled = true;
+        btn.value = '<%:Yacd%>';
+        var url1;
+        if (status.daip && window.location.hostname == status.daip) {
+            url1 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/yacd/?hostname=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
+        } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
+            var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
+            url1 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/yacd/?hostname=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
+        } else {
+            url1 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/yacd/';
+        }
+        winOpen(url1);
         return false;
     }
     
     function net_dashboard(btn) {
-        XHR.get('<%=luci.dispatcher.build_url("admin", "services", "openclash", "status")%>', null, function(x, status) {
-            btn.disabled = true;
-            btn.value = '<%:Dashboard%>';
-            var url2;
-            if (status.daip && window.location.hostname == status.daip) {
-                url2 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/dashboard/#/?host=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
-            } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
-                var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
-                url2 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/dashboard/#/?host=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
-            } else {
-                url2 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/dashboard/';
-            }
-            winOpen(url2);
-        });
+        if (StateManager.current_status) {
+            var status = StateManager.current_status;
+        } else {
+            setTimeout(function() {
+                net_dashboard(btn)
+            }, 1000);
+            return false;
+        }
+
+        btn.disabled = true;
+        btn.value = '<%:Dashboard%>';
+        var url2;
+        if (status.daip && window.location.hostname == status.daip) {
+            url2 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/dashboard/#/?host=' + window.location.hostname + '&port=' + status.cn_port + '&secret=' + status.dase;
+        } else if (status.daip && window.location.hostname != status.daip && status.db_foward_domain && status.db_foward_port) {
+            var ui_proto = status.db_forward_ssl == 0 ? 'http://' : 'https://';
+            url2 = ui_proto + status.db_foward_domain + ':' + status.db_foward_port + '/ui/dashboard/#/?host=' + status.db_foward_domain + '&port=' + status.db_foward_port + '&secret=' + status.dase;
+        } else {
+            url2 = 'http://' + window.location.hostname + ':' + status.cn_port + '/ui/dashboard/';
+        }
+        winOpen(url2);
         return false;
     }
     
@@ -4770,7 +4787,7 @@ body {
             
             if (DOMCache.clash && StateManager.current_status) {
                 DOMCache.clash.innerHTML = isRunning ? 
-                    '<b style=color:var(--success-color)>' + (StateManager.current_status.core_type || 'OpenClash') +'&nbsp;<%:Running%></b>' : 
+                    '<b style=color:var(--success-color)>' + StateManager.current_status.core_type +'&nbsp;<%:Running%></b>' : 
                     '<b style=color:var(--error-color)><%:Not Running%></b>';
             }
             

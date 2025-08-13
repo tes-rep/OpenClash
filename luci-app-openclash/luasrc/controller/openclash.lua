@@ -27,6 +27,7 @@ function index()
 	entry({"admin", "services", "openclash", "opupdate"},call("action_opupdate"))
 	entry({"admin", "services", "openclash", "coreupdate"},call("action_coreupdate"))
 	entry({"admin", "services", "openclash", "flush_dns_cache"}, call("action_flush_dns_cache"))
+    entry({"admin", "services", "openclash", "flush_smart_cache"}, call("action_flush_smart_cache"))
 	entry({"admin", "services", "openclash", "update_config"}, call("action_update_config"))
 	entry({"admin", "services", "openclash", "download_rule"}, call("action_download_rule"))
 	entry({"admin", "services", "openclash", "restore"}, call("action_restore_config"))
@@ -141,7 +142,7 @@ local function cn_port()
             local config_filename = fs.basename(config_path)
             local runtime_config_path = "/etc/openclash/" .. config_filename
             local ruby_result = luci.sys.exec(string.format([[
-                ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+                timeout 5 ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
                 begin
                     config = YAML.load_file('%s')
                     if config
@@ -155,9 +156,9 @@ local function cn_port()
                         end
                     end
                 end
-                " 2>/dev/null
-            ]], runtime_config_path)):gsub("%s+", "")
-            if ruby_result and ruby_result ~= "" then
+                " 2>/dev/null || echo "__RUBY_ERROR__"
+            ]], runtime_config_path)):gsub("\n", "")
+            if ruby_result and ruby_result ~= "" and ruby_result ~= "__RUBY_ERROR__" then
                 return ruby_result
             end
         end
@@ -180,7 +181,7 @@ local function dase()
             local config_filename = fs.basename(config_path)
             local runtime_config_path = "/etc/openclash/" .. config_filename
             local ruby_result = luci.sys.exec(string.format([[
-                ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+                timeout 5 ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
                 begin
                     config = YAML.load_file('%s')
                     if config
@@ -188,9 +189,11 @@ local function dase()
                         puts \"#{dase}\"
                     end
                 end
-                " 2>/dev/null
-            ]], runtime_config_path)):gsub("%s+", "")
-            return ruby_result
+                " 2>/dev/null || echo "__RUBY_ERROR__"
+            ]], runtime_config_path)):gsub("\n", "")
+            if ruby_result and ruby_result ~= "" and ruby_result ~= "__RUBY_ERROR__" then
+                return ruby_result
+            end
         end
     end
     return uci:get("openclash", "config", "dashboard_password")
@@ -412,6 +415,21 @@ function action_flush_dns_cache()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
 		flush_status = dns_state;
+	})
+end
+
+function action_flush_smart_cache()
+	local state = 0
+	if is_running() then
+		local daip = daip()
+		local dase = dase() or ""
+		local cn_port = cn_port()
+		if not daip or not cn_port then return end
+        flush_state = luci.sys.exec(string.format('curl -sL -m 3 -H "Content-Type: application/json" -H "Authorization: Bearer %s" -XPOST http://"%s":"%s"/cache/smart/flush', dase, daip, cn_port))
+    end
+	luci.http.prepare_content("application/json")
+	luci.http.write_json({
+		flush_status = flush_state;
 	})
 end
 
@@ -888,12 +906,11 @@ function sub_info_get()
 end
 
 function action_rule_mode()
-	local mode, info, core_type
+	local mode, info
 	if is_running() then
 		local daip = daip()
 		local dase = dase() or ""
 		local cn_port = cn_port()
-		core_type = uci:get("openclash", "config", "core_type") or "Meta"
 		if not daip or not cn_port then return end
 		info = json.parse(luci.sys.exec(string.format('curl -sL -m 3 -H "Content-Type: application/json" -H "Authorization: Bearer %s" -XGET http://"%s":"%s"/configs', dase, daip, cn_port)))
 		if info then
@@ -906,8 +923,7 @@ function action_rule_mode()
 	end
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-		mode = mode,
-		core_type = core_type;
+		mode = mode;
 	})
 end
 
@@ -1044,7 +1060,7 @@ function action_toolbar_show_sys()
             cpu = "0"
         end
 
-        load_avg = luci.sys.exec("awk '{print $2; exit}' /proc/loadavg 2>/dev/null"):gsub("%s+", "") or "0"
+        load_avg = luci.sys.exec("awk '{print $2; exit}' /proc/loadavg 2>/dev/null"):gsub("\n", "") or "0"
         
         if not string.match(load_avg, "^[0-9]*%.?[0-9]*$") then
             load_avg = "0"
@@ -1104,7 +1120,7 @@ function action_toolbar_show()
             cpu = "0"
         end
 
-        load_avg = luci.sys.exec("awk '{print $2; exit}' /proc/loadavg 2>/dev/null"):gsub("%s+", "") or "0"
+        load_avg = luci.sys.exec("awk '{print $2; exit}' /proc/loadavg 2>/dev/null"):gsub("\n", "") or "0"
         
         if not string.match(load_avg, "^[0-9]*%.?[0-9]*$") then
             load_avg = "0"
@@ -1260,14 +1276,14 @@ end
 function action_lastversion()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-			lastversion = check_lastversion();
+		lastversion = check_lastversion();
 	})
 end
 
 function action_start()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-			startlog = startlog();
+		startlog = startlog();
 	})
 end
 
@@ -1295,19 +1311,19 @@ end
 function action_update_info()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-			corever = corever(),
-			release_branch = release_branch(),
-			smart_enable = smart_enable();
+        corever = corever(),
+        release_branch = release_branch(),
+        smart_enable = smart_enable();
 	})
 end
 
 function action_update_ma()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-			oplv = oplv(),
-			pkg_type = pkg_type(),
-			corelv = corelv(),
-			corever = corever();
+        oplv = oplv(),
+        pkg_type = pkg_type(),
+        corelv = corelv(),
+        corever = corever();
 	})
 end
 
@@ -2182,10 +2198,23 @@ function action_website_check()
         luci.http.write_json(result)
         return
     end
-    
+
+    local test_domain = domain
+    local test_url
+
+    if test_domain:match("^https?://") then
+        test_domain = test_domain:gsub("^https?://([^/]+)/?.*$", "%1")
+    end
+
+    if domain == "https://raw.githubusercontent.com/" or test_domain == "raw.githubusercontent.com" then
+        test_url = "https://raw.githubusercontent.com/vernesong/OpenClash/dev/img/logo.png"
+    else
+        test_url = "https://" .. test_domain .. "/favicon.ico"
+    end
+
     local cmd = string.format(
-        'curl -sL -m 5 --connect-timeout 3 -w "%%{http_code},%%{time_total},%%{time_connect},%%{time_appconnect}" "https://%s/favicon.ico" -o /dev/null 2>/dev/null',
-        domain
+        'curl -sL -m 5 --connect-timeout 3 -w "%%{http_code},%%{time_total},%%{time_connect},%%{time_appconnect}" "%s" -o /dev/null 2>/dev/null',
+        test_url
     )
     
     local output = luci.sys.exec(cmd)
@@ -2211,9 +2240,15 @@ function action_website_check()
                 result.success = true
                 result.response_time = response_time
             else
+                local fallback_url
+                if domain == "https://raw.githubusercontent.com/" or test_domain == "raw.githubusercontent.com" then
+                    fallback_url = "https://raw.githubusercontent.com/vernesong/OpenClash/dev/img/logo.png"
+                else
+                    fallback_url = "https://" .. test_domain .. "/"
+                end
                 local fallback_cmd = string.format(
-                    'curl -sI -m 3 --connect-timeout 2 -w "%%{http_code},%%{time_total},%%{time_appconnect}" "https://%s/" -o /dev/null 2>/dev/null',
-                    domain
+                    'curl -sI -m 5 --connect-timeout 3 -w "%%{http_code},%%{time_total},%%{time_appconnect}" "%s" -o /dev/null 2>/dev/null',
+                    fallback_url
                 )
                 local fallback_output = luci.sys.exec(fallback_cmd)
                 
@@ -2296,7 +2331,7 @@ function action_proxy_info()
         
         if nixio.fs.access(runtime_config_path) then
             local ruby_result = luci.sys.exec(string.format([[
-                ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+                timeout 5 ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
                 begin
                     config = YAML.load_file('%s')
                     mixed_port = ''
@@ -2322,44 +2357,47 @@ function action_proxy_info()
                 rescue
                     puts ',,'
                 end
-                " 2>/dev/null
-            ]], runtime_config_path)):gsub("%s+", "")
+                " 2>/dev/null || echo "__RUBY_ERROR__"
+            ]], runtime_config_path)):gsub("\n", "")
             
-            local runtime_mixed_port, runtime_auth_user, runtime_auth_pass = ruby_result:match("([^,]*),([^,]*),([^,]*)")
-            
-            if runtime_mixed_port and runtime_mixed_port ~= "" then
-                result.mixed_port = runtime_mixed_port
-            else
-                local uci_mixed_port = uci:get("openclash", "config", "mixed_port")
-                if uci_mixed_port and uci_mixed_port ~= "" then
-                    result.mixed_port = uci_mixed_port
+            if ruby_result and ruby_result ~= "" and ruby_result ~= "__RUBY_ERROR__" then
+                local runtime_mixed_port, runtime_auth_user, runtime_auth_pass = ruby_result:match("([^,]*),([^,]*),([^,]*)")
+                
+                if runtime_mixed_port and runtime_mixed_port ~= "" then
+                    result.mixed_port = runtime_mixed_port
                 else
-                    result.mixed_port = "7893"
-                end
-            end
-            
-            if runtime_auth_user and runtime_auth_user ~= "" and runtime_auth_pass and runtime_auth_pass ~= "" then
-                result.auth_user = runtime_auth_user
-                result.auth_pass = runtime_auth_pass
-            else
-                uci:foreach("openclash", "authentication", function(section)
-                    if section.enabled == "1" and result.auth_user == "" then
-                        if section.username and section.username ~= "" then
-                            result.auth_user = section.username
-                        end
-                        if section.password and section.password ~= "" then
-                            result.auth_pass = section.password
-                        end
-                        return false
+                    local uci_mixed_port = uci:get("openclash", "config", "mixed_port")
+                    if uci_mixed_port and uci_mixed_port ~= "" then
+                        result.mixed_port = uci_mixed_port
+                    else
+                        result.mixed_port = "7893"
                     end
-                end)
+                end
+                
+                if runtime_auth_user and runtime_auth_user ~= "" and runtime_auth_pass and runtime_auth_pass ~= "" then
+                    result.auth_user = runtime_auth_user
+                    result.auth_pass = runtime_auth_pass
+                else
+                    uci:foreach("openclash", "authentication", function(section)
+                        if section.enabled == "1" and result.auth_user == "" then
+                            if section.username and section.username ~= "" then
+                                result.auth_user = section.username
+                            end
+                            if section.password and section.password ~= "" then
+                                result.auth_pass = section.password
+                            end
+                            return false
+                        end
+                    end)
+                end
+                luci.http.prepare_content("application/json")
+                luci.http.write_json(result)
+                return
             end
-        else
-            get_info_from_uci()
         end
-    else
-        get_info_from_uci()
     end
+
+    get_info_from_uci()
     
     luci.http.prepare_content("application/json")
     luci.http.write_json(result)
@@ -2393,7 +2431,7 @@ function action_oc_settings()
             
             if nixio.fs.access(runtime_config_path) then
                 local ruby_result = luci.sys.exec(string.format([[
-                    ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+                    timeout 5 ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
                     begin
                         config = YAML.load_file('%s')
                         if config
@@ -2406,13 +2444,17 @@ function action_oc_settings()
                     rescue
                         puts '0,0'
                     end
-                    " 2>/dev/null
-                ]], runtime_config_path)):gsub("%s+", "")
+                    " 2>/dev/null || echo "__RUBY_ERROR__"
+                ]], runtime_config_path)):gsub("\n", "")
                 
-                local sniffer_result, respect_rules_result = ruby_result:match("(%d),(%d)")
-                if sniffer_result and respect_rules_result then
-                    result.meta_sniffer = sniffer_result
-                    result.respect_rules = respect_rules_result
+                if ruby_result and ruby_result ~= "" and ruby_result ~= "__RUBY_ERROR__" then
+                    local sniffer_result, respect_rules_result = ruby_result:match("(%d),(%d)")
+                    if sniffer_result and respect_rules_result then
+                        result.meta_sniffer = sniffer_result
+                        result.respect_rules = respect_rules_result
+                    else
+                        get_uci_settings()
+                    end
                 else
                     get_uci_settings()
                 end
@@ -2723,7 +2765,7 @@ function action_generate_pac()
         
         if nixio.fs.access(runtime_config_path) then
             local ruby_result = luci.sys.exec(string.format([[
-                ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+                timeout 5 ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
                 begin
                     config = YAML.load_file('%s')
                     if config && config['authentication'] && config['authentication'].is_a?(Array) && !config['authentication'].empty?
@@ -2740,21 +2782,21 @@ function action_generate_pac()
                 rescue
                     puts ','
                 end
-                " 2>/dev/null
-            ]], runtime_config_path)):gsub("%s+", "")
-            
-            local runtime_user, runtime_pass = ruby_result:match("([^,]*),([^,]*)")
-            if runtime_user and runtime_user ~= "" and runtime_pass and runtime_pass ~= "" then
-                auth_user = runtime_user
-                auth_pass = runtime_pass
-                auth_exists = true
-            else
-                get_auth_from_uci()
+                " 2>/dev/null || echo "__RUBY_ERROR__"
+            ]], runtime_config_path)):gsub("\n", "")
+
+            if ruby_result and ruby_result ~= "" and ruby_result ~= "__RUBY_ERROR__" then
+                local runtime_user, runtime_pass = ruby_result:match("([^,]*),([^,]*)")
+                if runtime_user and runtime_user ~= "" and runtime_pass and runtime_pass ~= "" then
+                    auth_user = runtime_user
+                    auth_pass = runtime_pass
+                    auth_exists = true
+                end
             end
-        else
-            get_auth_from_uci()
         end
-    else
+    end
+
+    if not auth_exists then
         get_auth_from_uci()
     end
     
