@@ -109,26 +109,6 @@ jobs:
           make defconfig
           make package/luci-app-openclash/compile V=99
 
-      - name: Switch OpenClash Repository to Package
-        uses: actions/checkout@v4
-        with:
-          ref: package
-
-      - name: Commit and Push New Version
-        run: |
-          rm -rf ./${{ github.ref_name }}/luci-app-openclash*
-          echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
-          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
-          cd ..
-          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
-          cp "./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
-          cd OpenClash
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .
-          git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
-          git push
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -150,4 +130,27 @@ jobs:
         with:
           files: ./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+
+      - name: Switch OpenClash Repository to Package
+        uses: actions/checkout@v4
+        with:
+          ref: package
+
+      - name: Commit and Push New Version
+        run: |
+          rm -rf ./${{ github.ref_name }}/luci-app-openclash*
+          echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
+          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
+          cd ..
+          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
+          cp "./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
+          cd OpenClash
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
+          git push
+
+      
+
