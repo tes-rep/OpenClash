@@ -1,4 +1,4 @@
-name: Compile The New Version OpenClash
+name: Compile and Release OpenClash
 
 on: 
   push:
@@ -15,7 +15,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       current_version: ${{ steps.current_version.outputs.version }}
     steps:
-      - name: Clone Repository (dev)
+      - name: Clone Repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
@@ -23,11 +23,11 @@ jobs:
       - name: New Version
         id: version
         run: |
-          ver=$(grep 'PKG_VERSION:=' ./luci-app-openclash/Makefile | awk -F '=' '{print $2}')
-          echo "version=$ver" >> $GITHUB_OUTPUT
-          echo "New Version: $ver"
+          NEW_VER=$(grep 'PKG_VERSION:=' ./luci-app-openclash/Makefile | awk -F '=' '{print $2}')
+          echo "version=$NEW_VER" >> $GITHUB_OUTPUT
+          echo "New Version: $NEW_VER"
 
-      - name: Clone Repository (package)
+      - name: Clone Package Branch
         uses: actions/checkout@v4
         with:
           ref: package
@@ -35,9 +35,9 @@ jobs:
       - name: Current Version
         id: current_version
         run: |
-          ver=$(sed -n 1p ./package/version | awk -F 'v' '{print $2}')
-          echo "version=$ver" >> $GITHUB_OUTPUT
-          echo "Current Version: $ver"
+          CUR_VER=$(sed -n 1p ./${{ github.ref_name }}/version | awk -F 'v' '{print $2}')
+          echo "version=$CUR_VER" >> $GITHUB_OUTPUT
+          echo "Current Version: $CUR_VER"
 
   Compile:
     runs-on: ubuntu-latest
@@ -54,50 +54,58 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
-          sudo apt-get -y install curl git tar zstd jq
-
-      - name: Setup workspace folders
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/tmp
+          sudo apt-get -y install curl git tar zstd
 
       - name: Install OpenWrt SDK
         run: |
-          curl -SLk --connect-timeout 30 --retry 2 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o "$GITHUB_WORKSPACE/tmp/SDK.tar.bz2"
-          cd $GITHUB_WORKSPACE/tmp
+          cd ..
+          mkdir -p tmp
+          curl -SLk --connect-timeout 30 --retry 2 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o "./tmp/SDK.tar.bz2"
+          cd tmp
           tar xjf SDK.tar.bz2
-          mv OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64 SDK
+          mv "OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64" "SDK"
 
       - name: Install OpenWrt SNAPSHOT SDK
         run: |
+          cd ..
+          mkdir -p tmp
           BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64/"
           SDK_NAME=$(curl -s $BASE_URL | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk --connect-timeout 30 --retry 2 "$BASE_URL/$SDK_NAME" -o "$GITHUB_WORKSPACE/tmp/SNAPSDK.tar.zst"
-          cd $GITHUB_WORKSPACE/tmp
+          curl -SLk --connect-timeout 30 --retry 2 "$BASE_URL/$SDK_NAME" -o "./tmp/SNAPSDK.tar.zst"
+          cd tmp
           zstd -d SNAPSDK.tar.zst
           tar xf SNAPSDK.tar
           SDK_DIR=$(tar tf SNAPSDK.tar | head -n 1 | cut -d/ -f1)
-          mv "$SDK_DIR" SNAPSDK
+          mv "$SDK_DIR" "SNAPSDK"
 
       - name: Copy OpenClash Source Codes
         run: |
-          cp -rf "$GITHUB_WORKSPACE/OpenClash/luci-app-openclash/." "$GITHUB_WORKSPACE/tmp/SDK/package/luci-app-openclash/"
-          cp -rf "$GITHUB_WORKSPACE/OpenClash/luci-app-openclash/." "$GITHUB_WORKSPACE/tmp/SNAPSDK/package/luci-app-openclash/"
+          cd ..
+          mkdir -p tmp/SDK/package/luci-app-openclash
+          mkdir -p tmp/SNAPSDK/package/luci-app-openclash
+          cp -rf "./OpenClash/luci-app-openclash/." "./tmp/SDK/package/luci-app-openclash/"
+          cp -rf "./OpenClash/luci-app-openclash/." "./tmp/SNAPSDK/package/luci-app-openclash/"
 
       - name: Compile po2lmo
         run: |
-          cd $GITHUB_WORKSPACE/tmp/SDK/package/luci-app-openclash/tools/po2lmo
+          cd .. && cd tmp/SDK/package/
+          pushd luci-app-openclash/tools/po2lmo
           make && sudo make install
-          cd $GITHUB_WORKSPACE/tmp/SNAPSDK/package/luci-app-openclash/tools/po2lmo
+          popd
+          cd ../../..
+          cd tmp/SNAPSDK/package/
+          pushd luci-app-openclash/tools/po2lmo
           make && sudo make install
+          popd
 
       - name: Compile OpenClash IPK
         run: |
-          cd $GITHUB_WORKSPACE/tmp/SDK
+          cd .. && cd tmp/SDK
           make package/luci-app-openclash/compile V=99
 
       - name: Compile OpenClash APK
         run: |
-          cd $GITHUB_WORKSPACE/tmp/SNAPSDK
+          cd .. && cd tmp/SNAPSDK
           make defconfig
           make package/luci-app-openclash/compile V=99
 
@@ -108,92 +116,38 @@ jobs:
 
       - name: Commit and Push New Version
         run: |
-          rm -rf ./package/luci-app-openclash*
-          echo "v${{ needs.Get-Version.outputs.version }}" > ./package/version
-          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./package/version
-
-          cp "$GITHUB_WORKSPACE/tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./package/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
-          cp "$GITHUB_WORKSPACE/tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk" "./package/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
-
-          sed -i -E "s/OpenClash\/tree\/v(.*)/OpenClash\/tree\/v${{ needs.Get-Version.outputs.version }}/g" ./package/README.md
-          sed -i -E "s/OpenClash\/releases\/tag\/v(.*)/OpenClash\/releases\/tag\/v${{ needs.Get-Version.outputs.version }}/g" ./package/README.md
-          sed -i -E "s/source code-v(.*)-green/source code-v${{ needs.Get-Version.outputs.version }}-green/g" ./package/README.md
-          sed -i -E "s/New Release-v(.*)-orange/New Release-v${{ needs.Get-Version.outputs.version }}-orange/g" ./package/README.md
-
+          rm -rf ./${{ github.ref_name }}/luci-app-openclash*
+          echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
+          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
+          cd ..
+          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
+          cp "./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
+          cd OpenClash
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
           git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
           git push
 
-  Release-and-Upload:
-    needs: Compile
-    runs-on: ubuntu-latest
-    if: ${{ needs.Get-Version.outputs.version != needs.Get-Version.outputs.current_version }}
-    steps:
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq curl
-
-      - name: Create Release if not exists
-        id: create_release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.Get-Version.outputs.version }}
+          name: Release v${{ needs.Get-Version.outputs.version }}
+          body: "Auto-release OpenClash v${{ needs.Get-Version.outputs.version }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          TAG="v${{ needs.Get-Version.outputs.version }}"
-          REPO="${{ github.repository }}"
-          echo "Check if release $TAG exists..."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Cek apakah release sudah ada
-          RELEASE_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/releases/tags/$TAG")
-
-          RELEASE_ID=$(echo "$RELEASE_RESPONSE" | jq -r '.id // empty')
-
-          if [ -z "$RELEASE_ID" ]; then
-            echo "Release not found, creating new release..."
-            CREATE_RESPONSE=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
-              -d "{\"tag_name\":\"$TAG\",\"name\":\"$TAG\",\"body\":\"Auto generated release for version $TAG\",\"draft\":false,\"prerelease\":false}" \
-              "https://api.github.com/repos/$REPO/releases")
-
-            RELEASE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
-
-            if [ "$RELEASE_ID" = "null" ] || [ -z "$RELEASE_ID" ]; then
-              echo "Failed to create release"
-              exit 1
-            fi
-          else
-            echo "Release already exists with ID $RELEASE_ID"
-          fi
-
-          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-
-      - name: Upload IPK Asset
+      - name: Upload IPK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          RELEASE_ID=${{ steps.create_release.outputs.release_id }}
-          ASSET_PATH="$GITHUB_WORKSPACE/tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
-          FILE_NAME=$(basename "$ASSET_PATH")
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          echo "Uploading $FILE_NAME to release ID $RELEASE_ID..."
-          curl --fail -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"$ASSET_PATH" \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$FILE_NAME"
-
-      - name: Upload APK Asset
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          RELEASE_ID=${{ steps.create_release.outputs.release_id }}
-          ASSET_PATH="$GITHUB_WORKSPACE/tmp/SNAPSDK/bin/packages/x86_64/base/luci-app-openclash-${{ needs.Get-Version.outputs.version }}.apk"
-          FILE_NAME=$(basename "$ASSET_PATH")
-
-          echo "Uploading $FILE_NAME to release ID $RELEASE_ID..."
-          curl --fail -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"$ASSET_PATH" \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$FILE_NAME"
-
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
