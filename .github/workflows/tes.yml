@@ -3,7 +3,7 @@ name: Compile OpenClash IPK Only
 on: 
   push:
     branches:
-      - tes
+      - dev
     paths:
       - 'luci-app-openclash/Makefile'
   workflow_dispatch:
@@ -36,6 +36,7 @@ jobs:
         id: current_version
         run: |
           VERSION_FILE=./${{ github.ref_name }}/version
+          mkdir -p ./${{ github.ref_name }}
           if [ ! -f "$VERSION_FILE" ]; then
             echo "0" > "$VERSION_FILE"
           fi
@@ -91,6 +92,7 @@ jobs:
 
       - name: Commit and Push New Version
         run: |
+          mkdir -p ./${{ github.ref_name }}
           rm -rf ./${{ github.ref_name }}/luci-app-openclash*
           echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
           echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
@@ -107,7 +109,6 @@ jobs:
           git commit -m "Auto Release: v${{ needs.Get-Version.outputs.version }}"
           git push
 
-      # === Tambahan GitHub Release untuk IPK ===
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
