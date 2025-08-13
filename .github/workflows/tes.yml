@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - master
     paths:
       - 'luci-app-openclash/Makefile'
   workflow_dispatch:
@@ -35,8 +36,9 @@ jobs:
       - name: Current Version
         id: current_version
         run: |
-          VERSION_FILE=./${{ github.ref_name }}/version
-          mkdir -p ./${{ github.ref_name }}
+          BRANCH_DIR=./${{ github.ref_name }}
+          mkdir -p "$BRANCH_DIR"
+          VERSION_FILE="$BRANCH_DIR/version"
           if [ ! -f "$VERSION_FILE" ]; then
             echo "0" > "$VERSION_FILE"
           fi
@@ -49,7 +51,7 @@ jobs:
     needs: Get-Version
     if: ${{ needs.Get-Version.outputs.version != needs.Get-Version.outputs.current_version }}
     steps:
-      - name: Clone OpenClash dev Repository
+      - name: Clone OpenClash Repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
@@ -70,7 +72,7 @@ jobs:
           tar xjf SDK.tar.bz2
           mv "OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64" "SDK"
 
-      - name: Copy OpenClash Source Codes
+      - name: Copy OpenClash Source
         run: |
           cd ..
           mkdir -p tmp/SDK/package/luci-app-openclash
@@ -92,16 +94,27 @@ jobs:
 
       - name: Commit and Push New Version
         run: |
-          mkdir -p ./${{ github.ref_name }}
-          rm -rf ./${{ github.ref_name }}/luci-app-openclash*
-          echo "v${{ needs.Get-Version.outputs.version }}" > ./${{ github.ref_name }}/version
-          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> ./${{ github.ref_name }}/version
+          BRANCH_DIR=./${{ github.ref_name }}
+          mkdir -p "$BRANCH_DIR"
+          rm -rf $BRANCH_DIR/luci-app-openclash*
+          echo "v${{ needs.Get-Version.outputs.version }}" > $BRANCH_DIR/version
+          echo "https://img.shields.io/badge/New Release-v${{ needs.Get-Version.outputs.version }}-orange.svg" >> $BRANCH_DIR/version
+
+          # Buat README.md jika belum ada
+          README="$BRANCH_DIR/README.md"
+          if [ ! -f "$README" ]; then
+            touch "$README"
+          fi
+
           cd ..
           cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
-          sed -i -E "s/OpenClash\/tree\/v(.*)/OpenClash\/tree\/v${{ needs.Get-Version.outputs.version }}/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/OpenClash\/releases\/tag\/v(.*)/OpenClash\/releases\/tag\/v${{ needs.Get-Version.outputs.version }}/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/source code-v(.*)-green/source code-v${{ needs.Get-Version.outputs.version }}-green/g" ./OpenClash/${{ github.ref_name }}/README.md
-          sed -i -E "s/New Release-v(.*)-orange/New Release-v${{ needs.Get-Version.outputs.version }}-orange/g" ./OpenClash/${{ github.ref_name }}/README.md
+
+          # Update badge & link di README.md
+          sed -i -E "s/OpenClash\/tree\/v(.*)/OpenClash\/tree\/v${{ needs.Get-Version.outputs.version }}/g" $README
+          sed -i -E "s/OpenClash\/releases\/tag\/v(.*)/OpenClash\/releases\/tag\/v${{ needs.Get-Version.outputs.version }}/g" $README
+          sed -i -E "s/source code-v(.*)-green/source code-v${{ needs.Get-Version.outputs.version }}-green/g" $README
+          sed -i -E "s/New Release-v(.*)-orange/New Release-v${{ needs.Get-Version.outputs.version }}-orange/g" $README
+
           cd OpenClash
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
