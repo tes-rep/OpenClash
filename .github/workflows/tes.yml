@@ -36,7 +36,8 @@ jobs:
       - name: Current Version
         id: current_version
         run: |
-          BRANCH_DIR=./${{ github.ref_name }}
+          REPO_DIR=$(pwd)/OpenClash
+          BRANCH_DIR="$REPO_DIR/${{ github.ref_name }}"
           mkdir -p "$BRANCH_DIR"
           VERSION_FILE="$BRANCH_DIR/version"
           if [ ! -f "$VERSION_FILE" ]; then
@@ -94,7 +95,8 @@ jobs:
 
       - name: Commit and Push New Version
         run: |
-          BRANCH_DIR=./${{ github.ref_name }}
+          REPO_DIR=$(pwd)/OpenClash
+          BRANCH_DIR="$REPO_DIR/${{ github.ref_name }}"
           mkdir -p "$BRANCH_DIR"
           rm -rf $BRANCH_DIR/luci-app-openclash*
           echo "v${{ needs.Get-Version.outputs.version }}" > $BRANCH_DIR/version
@@ -106,8 +108,8 @@ jobs:
             touch "$README"
           fi
 
-          cd ..
-          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "./OpenClash/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
+          # Copy IPK ke folder branch
+          cp "./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk" "$BRANCH_DIR/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
 
           # Update badge & link di README.md
           sed -i -E "s/OpenClash\/tree\/v(.*)/OpenClash\/tree\/v${{ needs.Get-Version.outputs.version }}/g" $README
@@ -135,6 +137,6 @@ jobs:
         with:
           tag_name: "v${{ needs.Get-Version.outputs.version }}"
           name: luci-app-openclash-${{ needs.Get-Version.outputs.version }}-all.ipk
-          asset_path: ./tmp/SDK/bin/ar71xx/packages/base/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk
+          asset_path: "$REPO_DIR/${{ github.ref_name }}/luci-app-openclash_${{ needs.Get-Version.outputs.version }}_all.ipk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
