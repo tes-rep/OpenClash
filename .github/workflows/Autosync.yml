@@ -10,32 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout this repo
+      - name: Checkout this repo (shallow)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Ensure dev branch exists
         run: |
-          git fetch origin
-          if ! git show-ref --verify --quiet refs/heads/dev; then
-            git checkout -b mod origin/dev || git checkout -b mod
-            git push origin mod
+          git fetch origin dev || true
+          if git ls-remote --exit-code origin dev >/dev/null 2>&1; then
+            git checkout dev || git checkout -b dev origin/dev
           else
-            git checkout mod
+            git checkout -b dev
+            git push origin dev
           fi
 
       - name: Setup upstream remote
         run: |
           git remote set-url upstream https://github.com/vernesong/OpenClash.git || \
           git remote add upstream https://github.com/vernesong/OpenClash.git
-          git fetch upstream
+          git fetch upstream dev
 
       - name: Rebase dev onto upstream/dev
         run: |
-          git checkout mod
+          git checkout dev
           git rebase upstream/dev || git rebase --abort
 
       - name: Force push to origin
         run: |
-          git push origin mod --force
+          git push origin dev --force
